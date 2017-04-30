@@ -1,0 +1,58 @@
+#!/usr/bin/python
+import smtplib
+from email.mime.text import MIMEText
+import datetime
+
+MESSAGE = \
+"""Dear {username}
+
+This is a friendly reminder about your {name} schedule.  It is {date}, which
+means that you should be on {progress} by now."""
+SUBJECT = "Progress on project {name}"
+
+def send_mail(to, subject, message):
+  frm = 'noreply@localhost'
+
+  msg = MIMEText(message)
+  msg['Subject'] = subject
+  msg['To'] = to
+  msg['From'] = frm
+  s = smtplib.SMTP('localhost')
+  s.sendmail(frm, [to], msg.as_string())
+  s.quit()
+
+def send_reminder(config):
+  sep = (config['end_date'] - config['start_date']).days / config['num_reminders']
+  tod = (datetime.date.today() - config['start_date']).days
+  progress = config['get_progress'](tod / sep)
+  info = {
+      'username' : config['username'],
+      'name'     : config['name'],
+      'date'     : datetime.date.today().strftime("%d %B"),
+      'progress' : progress,
+      }
+  send_mail(config['email'],
+      SUBJECT.format(**info),
+      MESSAGE.format(**info))
+
+def should_send_reminder(config):
+  if datetime.date.today() > config['end_date']:
+    return False
+  if datetime.date.today() < config['start_date']:
+    return False
+  sep = (config['end_date'] - config['start_date']).days / config['num_reminders']
+  tod = (datetime.date.today() - config['start_date']).days
+  return tod % sep == 0
+
+def get_all_config_files():
+  import os
+  for i in os.listdir(os.environ['HOME']+'/.schedule'):
+    if i[-4:] == '.cfg':
+      yield os.environ['HOME']+'/.schedule/'+i
+
+if __name__ == "__main__":
+  import config
+  for i in get_all_config_files():
+    configuration = config.getConfiguration(i)
+    if should_send_reminder(configuration):
+      send_reminder(configuration)
