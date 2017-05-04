@@ -56,6 +56,22 @@ def get_all_project_filetree_names():
     if i[-4:] == '.cfg':
       yield i[:-4]
 
+def get_jsonable_description(filetree_name):
+  config = get_configuration(get_config_file(filetree_name))
+  ans = {
+      'name': config['name'],
+      'filetree_name': filetree_name,
+      'start_date': config['start_date'].strftime('%Y-%m-%d'),
+      'end_date': config['end_date'].strftime('%Y-%m-%d'),
+      }
+  return ans
+
+def get_all_projects_json():
+  ans = []
+  for i in get_all_project_filetree_names():
+    ans.append(get_jsonable_description(i))
+  return json.dumps(ans)
+
 if __name__ == "__main__":
   import argparse
   import config
@@ -74,4 +90,4 @@ if __name__ == "__main__":
   elif args.action == 'query':
     import json
     if args.entity == 'projects':
-      print json.dumps(list(get_all_project_filetree_names()))
+      print get_all_projects_json()
