@@ -2,6 +2,7 @@
 import smtplib
 from email.mime.text import MIMEText
 import datetime
+import os
 
 MESSAGE = \
 """Dear {username}
@@ -44,15 +45,33 @@ def should_send_reminder(config):
   tod = (datetime.date.today() - config['start_date']).days
   return tod % sep == 0
 
-def get_all_config_files():
-  import os
+def get_configuration(path):
+  return config.getConfiguration(path)
+
+def get_config_file(filetree_name):
+  return os.environ['HOME']+'/.schedule/'+filetree_name+'.cfg'
+
+def get_all_project_filetree_names():
   for i in os.listdir(os.environ['HOME']+'/.schedule'):
     if i[-4:] == '.cfg':
-      yield os.environ['HOME']+'/.schedule/'+i
+      yield i[:-4]
 
 if __name__ == "__main__":
+  import argparse
   import config
-  for i in get_all_config_files():
-    configuration = config.getConfiguration(i)
-    if should_send_reminder(configuration):
-      send_reminder(configuration)
+  parser = argparse.ArgumentParser()
+  subparsers = parser.add_subparsers(dest='action')
+  subparsers.add_parser('sendmail', help='sendmail')
+  query_parser = subparsers.add_parser('query', help='query')
+  query_parser.add_argument('entity', choices=['projects'])
+  args = parser.parse_args()
+
+  if args.action == 'sendmail':
+    for i in get_all_project_filetree_names():
+      configuration = get_configuration(get_config_file(i))
+      if should_send_reminder(configuration):
+        send_reminder(configuration)
+  elif args.action == 'query':
+    import json
+    if args.entity == 'projects':
+      print json.dumps(list(get_all_project_filetree_names()))
