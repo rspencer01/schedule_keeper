@@ -63,6 +63,8 @@ def get_jsonable_description(filetree_name):
       'filetree_name': filetree_name,
       'start_date': config['start_date'].strftime('%Y-%m-%d'),
       'end_date': config['end_date'].strftime('%Y-%m-%d'),
+      'num_reminders': config['num_reminders'],
+      'email': config['email'],
       }
   return ans
 
@@ -79,7 +81,9 @@ if __name__ == "__main__":
   subparsers = parser.add_subparsers(dest='action')
   subparsers.add_parser('sendmail', help='sendmail')
   query_parser = subparsers.add_parser('query', help='query')
-  query_parser.add_argument('entity', choices=['projects'])
+  update_parser = subparsers.add_parser('update', help='update')
+  update_parser.add_argument('filetree_name')
+
   args = parser.parse_args()
 
   if args.action == 'sendmail':
@@ -89,5 +93,11 @@ if __name__ == "__main__":
         send_reminder(configuration)
   elif args.action == 'query':
     import json
-    if args.entity == 'projects':
-      print get_all_projects_json()
+    print get_all_projects_json()
+  elif args.action == 'update':
+    inp = raw_input()
+    f = open(get_config_file(args.filetree_name),'w')
+    while inp != '':
+      f.write(inp+'\n')
+      inp = raw_input()
+    f.close
